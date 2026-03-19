@@ -61,7 +61,7 @@ export function DesktopSidebar() {
   const location = useLocation();
 
   return (
-    <aside className="hidden md:flex flex-col w-56 bg-card border-r min-h-screen sticky top-12">
+    <aside className="hidden md:flex flex-col w-56 bg-card border-r fixed top-12 bottom-0 z-40">
       <nav className="flex flex-col gap-1 p-3 pt-4">
         {navItems.map((item) => {
           const isActive = item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to);
@@ -92,7 +92,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <TopNav />
       <div className="flex flex-1">
         <DesktopSidebar />
-        <main className="flex-1 pb-16 md:pb-0">{children}</main>
+        <main className="flex-1 pb-16 md:pb-0 md:ml-56">{children}</main>
       </div>
       <BottomNav />
     </div>

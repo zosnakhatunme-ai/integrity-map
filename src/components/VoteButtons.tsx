@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle, HelpCircle, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import type { VoteType } from "@/lib/types";
 import { voteReport, getVotedReports, setVotedReport } from "@/lib/reports";
 
@@ -21,6 +22,12 @@ export function VoteButtons({ reportId, votes }: VoteButtonsProps) {
     setVoted(type);
     setLocalVotes((v) => ({ ...v, [type]: v[type] + 1 }));
     setVotedReport(reportId, type);
+
+    const label = type === "truth" ? "✅ সত্য" : type === "needProve" ? "🔍 প্রমাণ চাই" : "❌ মিথ্যা";
+    toast.success(`আপনার ভোট "${label}" সফলভাবে জমা হয়েছে!`, {
+      duration: 3000,
+    });
+
     try {
       await voteReport(reportId, type);
     } catch (err) {

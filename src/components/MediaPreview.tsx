@@ -87,20 +87,18 @@ export function EvidenceGrid({ links }: EvidenceGridProps) {
     return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null;
   };
 
-  const gridCols = links.length === 1 ? "grid-cols-1" : links.length === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3";
-
   return (
     <>
-      <div className={`grid ${gridCols} gap-2`}>
+      <div className="flex flex-col gap-2 w-full">
         {links.map((link, i) => (
           <button
             key={i}
             onClick={(e) => { e.stopPropagation(); setPreviewUrl(link); }}
-            className="block rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all text-left relative group shadow-sm hover:shadow-md"
+            className="block w-full rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all text-left relative group shadow-sm hover:shadow-md"
           >
             {isImage(link) ? (
               <div className="relative">
-                <img src={link} alt={`প্রমাণ ${i + 1}`} className="w-full h-32 object-cover" loading="lazy" />
+                <img src={link} alt={`প্রমাণ ${i + 1}`} className="w-full max-h-80 object-cover" loading="lazy" />
                 <div className="absolute top-2 left-2 bg-black/50 text-white rounded-full px-2 py-0.5 text-[10px] flex items-center gap-1">
                   <ImageIcon className="w-3 h-3" /> ছবি
                 </div>
@@ -108,15 +106,15 @@ export function EvidenceGrid({ links }: EvidenceGridProps) {
             ) : isVideo(link) ? (
               <div className="relative">
                 {getYouTubeThumbnail(link) ? (
-                  <img src={getYouTubeThumbnail(link)!} alt="ভিডিও" className="w-full h-32 object-cover" />
+                  <img src={getYouTubeThumbnail(link)!} alt="ভিডিও" className="w-full max-h-80 object-cover" />
                 ) : (
-                  <div className="w-full h-32 bg-muted flex items-center justify-center">
+                  <div className="w-full h-48 bg-muted flex items-center justify-center">
                     <span className="text-2xl">🎬</span>
                   </div>
                 )}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                    <Play className="w-5 h-5 text-primary ml-0.5" fill="currentColor" />
+                  <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                    <Play className="w-6 h-6 text-primary ml-0.5" fill="currentColor" />
                   </div>
                 </div>
                 <div className="absolute top-2 left-2 bg-black/50 text-white rounded-full px-2 py-0.5 text-[10px] flex items-center gap-1">
@@ -124,10 +122,10 @@ export function EvidenceGrid({ links }: EvidenceGridProps) {
                 </div>
               </div>
             ) : (
-              <div className="p-3 h-32 flex flex-col items-center justify-center gap-2 bg-muted/50">
-                <ExternalLink className="w-6 h-6 text-primary" />
-                <span className="text-xs text-primary text-center line-clamp-2">
-                  {link.length > 40 ? link.slice(0, 40) + "..." : link}
+              <div className="p-4 flex items-center gap-3 bg-muted/50">
+                <ExternalLink className="w-5 h-5 text-primary shrink-0" />
+                <span className="text-xs text-primary truncate">
+                  {link.length > 60 ? link.slice(0, 60) + "..." : link}
                 </span>
               </div>
             )}

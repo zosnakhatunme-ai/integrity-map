@@ -6,7 +6,7 @@ import { VoteButtons } from "./VoteButtons";
 import { EvidenceGrid } from "./MediaPreview";
 import { AnonAvatar } from "./AnonAvatar";
 import type { Report } from "@/lib/types";
-import { getAnonymousName, formatDate, getCorruptionIcon, getShareText } from "@/lib/helpers";
+import { getAnonymousName, formatDate, getShareText } from "@/lib/helpers";
 
 interface ReportCardProps {
   report: Report;
@@ -37,9 +37,7 @@ export function ReportCard({ report }: ReportCardProps) {
     <div className="bg-card rounded-xl border shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-4">
         <div className="flex items-center gap-2.5 mb-2.5">
-          {/* ── custom deterministic avatar ── */}
           <AnonAvatar id={report.id} size={36} />
-
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate font-display text-primary">
               {anonName}
@@ -49,7 +47,7 @@ export function ReportCard({ report }: ReportCardProps) {
             </p>
           </div>
           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-medium shrink-0">
-            {getCorruptionIcon(report.corruptionType)} {report.corruptionType}
+            {report.corruptionType}
           </span>
         </div>
 
