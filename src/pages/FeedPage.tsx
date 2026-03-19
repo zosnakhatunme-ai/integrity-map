@@ -6,7 +6,7 @@ import { SkeletonReportCard } from "@/components/SkeletonCard";
 import { CORRUPTION_TYPES } from "@/lib/constants";
 import { getDominantVote } from "@/lib/helpers";
 import type { Report } from "@/lib/types";
-import { FileText, Calendar, MapPin, CheckCircle, Vote } from "lucide-react";
+import { FileText, Calendar, MapPin, CheckCircle, Vote, TrendingUp } from "lucide-react";
 
 const PAGE_SIZE = 10;
 
@@ -14,7 +14,7 @@ export default function FeedPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("");
-  const [sortBy, setSortBy] = useState<"recent" | "nearby">("recent");
+  const [sortBy, setSortBy] = useState<"recent" | "nearby" | "trending">("recent");
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
@@ -52,6 +52,14 @@ export default function FeedPage() {
       const distA = Math.sqrt(Math.pow(a.latitude - userLoc.lat, 2) + Math.pow(a.longitude - userLoc.lng, 2));
       const distB = Math.sqrt(Math.pow(b.latitude - userLoc.lat, 2) + Math.pow(b.longitude - userLoc.lng, 2));
       return distA - distB;
+    });
+  }
+
+  if (sortBy === "trending") {
+    filtered.sort((a, b) => {
+      const totalA = a.votes.truth + a.votes.needProve + a.votes.fake;
+      const totalB = b.votes.truth + b.votes.needProve + b.votes.fake;
+      return totalB - totalA;
     });
   }
 
@@ -119,6 +127,14 @@ export default function FeedPage() {
           }`}
         >
           সাম্প্রতিক
+        </button>
+        <button
+          onClick={() => setSortBy("trending")}
+          className={`text-xs px-2.5 py-1.5 rounded-lg border shrink-0 transition-colors flex items-center gap-1 ${
+            sortBy === "trending" ? "bg-primary text-primary-foreground" : "bg-card"
+          }`}
+        >
+          <TrendingUp className="w-3 h-3" /> ট্রেন্ডিং
         </button>
         <button
           onClick={handleNearby}

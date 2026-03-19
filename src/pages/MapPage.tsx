@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, CircleMarker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Plus, Navigation, Filter, X, FileText, CheckCircle, AlertTriangle, Info, MapPin } from "lucide-react";
+import { Plus, Navigation, Filter, X, FileText, CheckCircle, AlertTriangle, Info, MapPin, TrendingUp } from "lucide-react";
 import { fetchReports } from "@/lib/reports";
 import { BD_CENTER, BD_ZOOM, CORRUPTION_TYPES } from "@/lib/constants";
 import { getDominantVote, formatDate, getCorruptionIcon, getAnonymousName } from "@/lib/helpers";
@@ -103,8 +103,6 @@ function ReportPopupContent({ report, navigate }: { report: Report; navigate: (p
 
   return (
     <div style={{ width: 272, fontFamily: "inherit", boxSizing: "border-box", overflow: "hidden", padding: "12px 14px 14px 14px" }}>
-
-      {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <AnonAvatar id={report.id} size={32} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -113,13 +111,11 @@ function ReportPopupContent({ report, navigate }: { report: Report; navigate: (p
           </p>
           <p style={{ fontSize: 10, color: "#999", margin: 0 }}>{formatDate(report.createdAt)}</p>
         </div>
-        {/* verdict badge */}
         <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 20, background: dominantLabel.bg, color: dominantLabel.color, whiteSpace: "nowrap", flexShrink: 0 }}>
           {dominantLabel.text}
         </span>
       </div>
 
-      {/* ── Tags row ── */}
       <div style={{ display: "flex", gap: 5, marginBottom: 8, flexWrap: "wrap" }}>
         <span style={{ background: "#FF3B3012", color: "#FF3B30", padding: "3px 8px", borderRadius: 20, fontSize: 10, fontWeight: 600 }}>
           {getCorruptionIcon(report.corruptionType)} {report.corruptionType}
@@ -129,29 +125,22 @@ function ReportPopupContent({ report, navigate }: { report: Report; navigate: (p
         </span>
       </div>
 
-      {/* ── Title ── */}
       <h3 style={{ fontWeight: 700, fontSize: 13, margin: "0 0 10px 0", lineHeight: 1.4, color: "#1a1a1a" }}>
         {report.title}
       </h3>
 
-      {/* ── Vote section ── */}
       <div style={{ background: "#FAFAFA", border: "1px solid #EFEFEF", borderRadius: 10, padding: "8px 10px", marginBottom: 10 }}>
-
-        {/* three vote pills */}
         <div style={{ display: "flex", gap: 5, marginBottom: 7 }}>
-          {/* truth */}
           <div style={{ flex: 1, background: "#EDFBF1", borderRadius: 8, padding: "5px 4px", textAlign: "center" }}>
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1 }}>✅</p>
             <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 700, color: "#1a7f3c", lineHeight: 1 }}>{report.votes.truth}</p>
             <p style={{ margin: "2px 0 0", fontSize: 9, color: "#1a7f3c", opacity: 0.8 }}>সত্য</p>
           </div>
-          {/* need proof */}
           <div style={{ flex: 1, background: "#EEF4FF", borderRadius: 8, padding: "5px 4px", textAlign: "center" }}>
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1 }}>🔍</p>
             <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 700, color: "#1a56db", lineHeight: 1 }}>{report.votes.needProve}</p>
             <p style={{ margin: "2px 0 0", fontSize: 9, color: "#1a56db", opacity: 0.8 }}>প্রমাণ চাই</p>
           </div>
-          {/* fake */}
           <div style={{ flex: 1, background: "#FFF0F0", borderRadius: 8, padding: "5px 4px", textAlign: "center" }}>
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1 }}>❌</p>
             <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 700, color: "#c0392b", lineHeight: 1 }}>{report.votes.fake}</p>
@@ -159,7 +148,6 @@ function ReportPopupContent({ report, navigate }: { report: Report; navigate: (p
           </div>
         </div>
 
-        {/* stacked progress bar */}
         {total > 0 ? (
           <>
             <div style={{ height: 5, borderRadius: 99, overflow: "hidden", display: "flex", background: "#E5E5E5" }}>
@@ -174,7 +162,6 @@ function ReportPopupContent({ report, navigate }: { report: Report; navigate: (p
         )}
       </div>
 
-      {/* ── Action buttons ── */}
       <div style={{ display: "flex", gap: 6 }}>
         <button
           onClick={() => navigate(`/report/${report.id}`)}
@@ -206,7 +193,6 @@ export default function MapPage() {
   const markerRefs = useRef<Record<string, L.Marker>>({});
   const isMobile = useIsMobile();
 
-  // Inject Leaflet popup override styles once
   useEffect(() => {
     const styleId = "custom-popup-style";
     if (!document.getElementById(styleId)) {

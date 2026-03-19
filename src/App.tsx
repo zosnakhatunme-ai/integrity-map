@@ -30,7 +30,6 @@ const App = () => (
                   <Route path="/add-report" element={<AddReportPage />} />
                   <Route path="/info" element={<InfoPage />} />
                   <Route path="/report/:id" element={<ReportDetailPage />} />
-                  <Route path="/chor-admin-panel" element={<AdminPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

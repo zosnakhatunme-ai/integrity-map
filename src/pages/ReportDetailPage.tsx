@@ -9,14 +9,17 @@ import { VoteButtons } from "@/components/VoteButtons";
 import { EvidenceGrid } from "@/components/MediaPreview";
 import { SkeletonDetailPage } from "@/components/SkeletonCard";
 import { AnonAvatar } from "@/components/AnonAvatar";
-import { getAnonymousName, formatDate, getCorruptionIcon, getShareText } from "@/lib/helpers";
+import { getAnonymousName, formatDate, getShareText } from "@/lib/helpers";
 import type { Report } from "@/lib/types";
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
+const defaultIcon = L.icon({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
   iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
 export default function ReportDetailPage() {
@@ -76,22 +79,18 @@ export default function ReportDetailPage() {
       <div className="bg-card rounded-xl border shadow-sm overflow-hidden mb-4">
         <div className="p-4">
           <div className="flex items-center gap-2.5 mb-3">
-            {/* ── custom deterministic avatar (larger on detail page) ── */}
             <AnonAvatar id={report.id} size={40} />
-
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="font-display font-semibold text-primary">{anonName}</p>
               <p className="text-xs text-muted-foreground">{formatDate(report.createdAt)}</p>
             </div>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium shrink-0">
+              {report.corruptionType}
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 mb-3">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-medium">
-              {getCorruptionIcon(report.corruptionType)} {report.corruptionType}
-            </span>
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="w-3 h-3" /> {report.area}
-            </span>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+            <MapPin className="w-3 h-3" /> {report.area}
           </div>
 
           <h1 className="font-display font-bold text-xl mb-3">{report.title}</h1>
@@ -149,7 +148,7 @@ export default function ReportDetailPage() {
           scrollWheelZoom={false}
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <Marker position={[report.latitude, report.longitude]} />
+          <Marker position={[report.latitude, report.longitude]} icon={defaultIcon} />
         </MapContainer>
       </div>
     </div>
