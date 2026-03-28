@@ -408,6 +408,12 @@ export default function MapPage() {
             <Flame className="w-5 h-5" />
           </button>
           <button
+            onClick={() => setShowDistricts(!showDistricts)}
+            className={`shadow-lg rounded-full w-10 h-10 flex items-center justify-center border ${showDistricts ? "bg-primary text-primary-foreground" : "bg-card"}`}
+          >
+            <Globe className="w-5 h-5" />
+          </button>
+          <button
             onClick={handleNearby}
             className="bg-card shadow-lg rounded-full w-10 h-10 flex items-center justify-center border"
           >
