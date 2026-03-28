@@ -326,27 +326,30 @@ export default function MapPage() {
         ))}
       </MapContainer>
 
-      <div className="absolute top-2 left-2 right-14 z-[1000] flex gap-2 overflow-x-auto no-scrollbar">
-        <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
-          <FileText className="w-4 h-4 text-primary" />
-          <div>
-            <p className="text-xs font-bold font-display leading-none">{reports.length}</p>
-            <p className="text-[10px] text-muted-foreground">রিপোর্ট</p>
+      <div className="absolute top-2 left-2 right-14 z-[1000] flex flex-col gap-2">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
+            <FileText className="w-4 h-4 text-primary" />
+            <div>
+              <p className="text-xs font-bold font-display leading-none">{filtered.length}</p>
+              <p className="text-[10px] text-muted-foreground">রিপোর্ট</p>
+            </div>
           </div>
-        </div>
-        <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
-          <CheckCircle className="w-4 h-4 text-vote-truth" />
-          <div>
-            <p className="text-xs font-bold font-display leading-none">{verifiedCount}</p>
-            <p className="text-[10px] text-muted-foreground">যাচাইকৃত</p>
+          <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
+            <CheckCircle className="w-4 h-4 text-vote-truth" />
+            <div>
+              <p className="text-xs font-bold font-display leading-none">{verifiedCount}</p>
+              <p className="text-[10px] text-muted-foreground">যাচাইকৃত</p>
+            </div>
           </div>
-        </div>
-        <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
-          <AlertTriangle className="w-4 h-4 text-vote-fake" />
-          <div>
-            <p className="text-xs font-bold font-display leading-none">{totalVotes}</p>
-            <p className="text-[10px] text-muted-foreground">মোট ভোট</p>
+          <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
+            <AlertTriangle className="w-4 h-4 text-vote-fake" />
+            <div>
+              <p className="text-xs font-bold font-display leading-none">{totalVotes}</p>
+              <p className="text-[10px] text-muted-foreground">মোট ভোট</p>
+            </div>
           </div>
+          <TimeSlider value={timeFilter} onChange={setTimeFilter} />
         </div>
       </div>
 
