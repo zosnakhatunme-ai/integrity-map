@@ -255,7 +255,17 @@ export default function MapPage() {
     }
   }, [searchParams]);
 
-  const filtered = filterType ? reports.filter((r) => r.corruptionType === filterType) : reports;
+  const timeFiltered = useMemo(() => {
+    const days = getTimeDays(timeFilter);
+    if (days === 0) return reports;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    return reports.filter((r) => {
+      const created = r.createdAt instanceof Date ? r.createdAt.getTime() : new Date(r.createdAt).getTime();
+      return created >= cutoff;
+    });
+  }, [reports, timeFilter]);
+
+  const filtered = filterType ? timeFiltered.filter((r) => r.corruptionType === filterType) : timeFiltered;
 
   const totalVotes = reports.reduce((sum, r) => sum + r.votes.truth + r.votes.needProve + r.votes.fake, 0);
   const verifiedCount = reports.filter((r) => getDominantVote(r.votes) === "truth").length;
