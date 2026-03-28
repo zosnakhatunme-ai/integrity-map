@@ -1,13 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { fetchReports, updateReport, deleteReport, fetchPendingEvidence, approvePendingEvidence, rejectPendingEvidence } from "@/lib/reports";
+import {
+  fetchReports,
+  updateReport,
+  deleteReport,
+  fetchPendingEvidence,
+  approvePendingEvidence,
+  rejectPendingEvidence,
+} from "@/lib/reports";
 import { CORRUPTION_TYPES } from "@/lib/constants";
 import { formatDate } from "@/lib/helpers";
 import {
   Trash2, Edit, Save, X, LogOut, Plus, Minus,
   CheckCircle, XCircle, Upload, ExternalLink, RefreshCw,
-  Clock, Calendar, FileText, ShieldAlert,
+  Clock, Calendar, FileText, ShieldAlert, AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Report, PendingEvidence } from "@/lib/types";
@@ -35,38 +42,48 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
   };
 
   return (
-    <div className="max-w-sm mx-auto px-4 py-16">
-      <div className="text-center mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-          <ShieldAlert className="w-6 h-6 text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert className="w-7 h-7 text-primary" />
+          </div>
+          <h2 className="font-display font-bold text-2xl">এডমিন লগইন</h2>
+          <p className="text-sm text-muted-foreground mt-1">শুধুমাত্র অনুমোদিত ব্যক্তির জন্য</p>
         </div>
-        <h2 className="font-display font-bold text-xl">এডমিন লগইন</h2>
-        <p className="text-xs text-muted-foreground mt-1">শুধুমাত্র অনুমোদিত ব্যক্তির জন্য</p>
-      </div>
-      <div className="space-y-3">
-        <input
-          type="email"
-          placeholder="ইমেইল"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border rounded-xl px-3 py-2.5 bg-card text-sm focus:border-primary outline-none transition-colors"
-        />
-        <input
-          type="password"
-          placeholder="পাসওয়ার্ড"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full border rounded-xl px-3 py-2.5 bg-card text-sm focus:border-primary outline-none transition-colors"
-          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-        />
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl font-display font-semibold text-sm disabled:opacity-60 flex items-center justify-center gap-2"
-        >
-          {loading && <div className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />}
-          লগইন
-        </button>
+        <div className="bg-card rounded-2xl border shadow-sm p-6 space-y-4">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">ইমেইল</label>
+            <input
+              type="email"
+              placeholder="admin@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border rounded-xl px-3 py-2.5 bg-background text-sm focus:border-primary outline-none transition-colors mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">পাসওয়ার্ড</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border rounded-xl px-3 py-2.5 bg-background text-sm focus:border-primary outline-none transition-colors mt-1"
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            />
+          </div>
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl font-display font-semibold text-sm disabled:opacity-60 flex items-center justify-center gap-2 mt-2"
+          >
+            {loading && (
+              <div className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+            )}
+            লগইন করুন
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -83,7 +100,6 @@ function EditReportForm({
   onSave: (data: Partial<Report>) => void;
   onCancel: () => void;
 }) {
-  // Convert Firestore Timestamp / Date to datetime-local string
   const toDatetimeLocal = (d: Date | { toDate?: () => Date } | string | number): string => {
     try {
       let date: Date;
@@ -135,7 +151,7 @@ function EditReportForm({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pt-1">
       {/* Title */}
       <div>
         <label className="text-xs font-medium text-muted-foreground">শিরোনাম</label>
@@ -156,7 +172,9 @@ function EditReportForm({
             className="w-full border rounded-lg px-3 py-2 text-sm bg-background mt-1 focus:border-primary outline-none"
           >
             {CORRUPTION_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.icon} {t.label}</option>
+              <option key={t.value} value={t.value}>
+                {t.icon} {t.label}
+              </option>
             ))}
           </select>
         </div>
@@ -170,7 +188,7 @@ function EditReportForm({
         </div>
       </div>
 
-      {/* Date + Time — NEW */}
+      {/* Date + Time */}
       <div>
         <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
           <Calendar className="w-3.5 h-3.5" /> তারিখ ও সময়
@@ -228,7 +246,9 @@ function EditReportForm({
               type="number"
               min={0}
               value={data.votes.truth}
-              onChange={(e) => setData({ ...data, votes: { ...data.votes, truth: parseInt(e.target.value) || 0 } })}
+              onChange={(e) =>
+                setData({ ...data, votes: { ...data.votes, truth: parseInt(e.target.value) || 0 } })
+              }
               className="w-full text-sm bg-transparent text-center outline-none"
             />
           </div>
@@ -238,7 +258,9 @@ function EditReportForm({
               type="number"
               min={0}
               value={data.votes.needProve}
-              onChange={(e) => setData({ ...data, votes: { ...data.votes, needProve: parseInt(e.target.value) || 0 } })}
+              onChange={(e) =>
+                setData({ ...data, votes: { ...data.votes, needProve: parseInt(e.target.value) || 0 } })
+              }
               className="w-full text-sm bg-transparent text-center outline-none"
             />
           </div>
@@ -248,7 +270,9 @@ function EditReportForm({
               type="number"
               min={0}
               value={data.votes.fake}
-              onChange={(e) => setData({ ...data, votes: { ...data.votes, fake: parseInt(e.target.value) || 0 } })}
+              onChange={(e) =>
+                setData({ ...data, votes: { ...data.votes, fake: parseInt(e.target.value) || 0 } })
+              }
               className="w-full text-sm bg-transparent text-center outline-none"
             />
           </div>
@@ -314,28 +338,41 @@ function EditReportForm({
 
 // ─── Pending Evidence Section ─────────────────────────────────────────────────
 
-function PendingEvidenceSection() {
+function PendingEvidenceSection({ refreshKey }: { refreshKey: number }) {
   const [evidence, setEvidence] = useState<PendingEvidence[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
+      // fetchPendingEvidence uses where("status","==","pending") + orderBy("createdAt","desc")
+      // If Firestore composite index is missing this will throw. We catch and fallback.
       const data = await fetchPendingEvidence();
-      setEvidence(data ?? []);
-    } catch (err) {
+      setEvidence(Array.isArray(data) ? data : []);
+    } catch (err: unknown) {
       console.error("fetchPendingEvidence error:", err);
-      toast.error("পেন্ডিং প্রমাণ লোড করতে সমস্যা হয়েছে");
+      // Provide a helpful error with a link if it's a missing-index Firestore error
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("index") || msg.includes("Index")) {
+        setError(
+          "Firestore composite index তৈরি হয়নি। Firebase Console → Firestore → Indexes-এ গিয়ে `pending_evidence` collection-এ `status ASC, createdAt DESC` index তৈরি করুন।"
+        );
+      } else {
+        setError("পেন্ডিং প্রমাণ লোড করতে সমস্যা হয়েছে: " + msg);
+      }
       setEvidence([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
+  // Reload whenever the tab becomes active (refreshKey changes)
   useEffect(() => {
     load();
-  }, []);
+  }, [load, refreshKey]);
 
   const handleApprove = async (item: PendingEvidence) => {
     setActionId(item.id);
@@ -367,32 +404,59 @@ function PendingEvidenceSection() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-2">
-        <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
-        <p className="text-xs text-muted-foreground">লোড হচ্ছে...</p>
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <div className="animate-spin rounded-full h-7 w-7 border-2 border-primary border-t-transparent" />
+        <p className="text-xs text-muted-foreground">পেন্ডিং প্রমাণ লোড হচ্ছে...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4 space-y-3">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-destructive font-display">লোড ব্যর্থ হয়েছে</p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{error}</p>
+          </div>
+        </div>
+        <button
+          onClick={load}
+          className="flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> আবার চেষ্টা করুন
+        </button>
       </div>
     );
   }
 
   if (evidence.length === 0) {
     return (
-      <div className="text-center py-12">
-        <CheckCircle className="w-8 h-8 text-vote-truth mx-auto mb-2 opacity-50" />
-        <p className="text-sm font-display text-muted-foreground">কোনো পেন্ডিং প্রমাণ নেই</p>
+      <div className="text-center py-16 space-y-3">
+        <div className="w-14 h-14 rounded-2xl bg-vote-truth/10 flex items-center justify-center mx-auto">
+          <CheckCircle className="w-7 h-7 text-vote-truth" />
+        </div>
+        <div>
+          <p className="text-sm font-display font-semibold">কোনো পেন্ডিং প্রমাণ নেই</p>
+          <p className="text-xs text-muted-foreground mt-1">সব প্রমাণ পর্যালোচনা করা হয়েছে</p>
+        </div>
         <button
           onClick={load}
-          className="mt-3 text-xs text-primary flex items-center gap-1 mx-auto hover:underline"
+          className="text-xs text-primary flex items-center gap-1.5 mx-auto hover:underline font-medium"
         >
-          <RefreshCw className="w-3 h-3" /> রিফ্রেশ করুন
+          <RefreshCw className="w-3.5 h-3.5" /> রিফ্রেশ করুন
         </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between mb-1">
-        <p className="text-xs text-muted-foreground">{evidence.length}টি প্রমাণ অপেক্ষায় আছে</p>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">{evidence.length}টি</span> প্রমাণ অনুমোদনের অপেক্ষায়
+        </p>
         <button
           onClick={load}
           className="text-xs text-primary flex items-center gap-1 hover:underline"
@@ -406,63 +470,25 @@ function PendingEvidenceSection() {
         const isBusy = actionId === item.id;
 
         return (
-          <div key={item.id} className="bg-card rounded-xl border p-3 shadow-sm">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold font-display truncate">{item.reportTitle}</p>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <Clock className="w-3 h-3" />
-                  {formatDate(item.createdAt)}
-                </p>
-              </div>
-              {/* Approve / Reject */}
-              <div className="flex gap-1.5 shrink-0">
-                <button
-                  onClick={() => handleApprove(item)}
-                  disabled={isBusy}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-vote-truth/10 text-vote-truth hover:bg-vote-truth/20 text-xs font-medium transition-colors disabled:opacity-50"
-                >
-                  {isBusy ? (
-                    <div className="w-3.5 h-3.5 border-2 border-vote-truth/40 border-t-vote-truth rounded-full animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-3.5 h-3.5" />
-                  )}
-                  অনুমোদন
-                </button>
-                <button
-                  onClick={() => handleReject(item)}
-                  disabled={isBusy}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-vote-fake/10 text-vote-fake hover:bg-vote-fake/20 text-xs font-medium transition-colors disabled:opacity-50"
-                >
-                  {isBusy ? (
-                    <div className="w-3.5 h-3.5 border-2 border-vote-fake/40 border-t-vote-fake rounded-full animate-spin" />
-                  ) : (
-                    <XCircle className="w-3.5 h-3.5" />
-                  )}
-                  বাতিল
-                </button>
-              </div>
-            </div>
-
+          <div key={item.id} className="bg-card rounded-xl border shadow-sm overflow-hidden">
             {/* Preview */}
             {isImage ? (
-              <div className="relative">
+              <div className="relative bg-muted">
                 <img
                   src={item.url}
                   alt="প্রমাণ"
-                  className="w-full max-h-48 object-contain rounded-lg border bg-muted"
+                  className="w-full max-h-56 object-contain"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
+                    (e.target as HTMLImageElement).parentElement!.style.display = "none";
                   }}
                 />
                 <a
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="absolute top-2 right-2 p-1 bg-black/50 rounded text-white hover:bg-black/70 transition-colors"
+                  className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-lg text-white hover:bg-black/70 transition-colors"
                 >
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
             ) : (
@@ -470,12 +496,53 @@ function PendingEvidenceSection() {
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-primary hover:underline bg-primary/5 rounded-lg px-3 py-2 border border-primary/10 break-all"
+                className="flex items-center gap-2 text-xs text-primary hover:bg-primary/5 bg-primary/5 px-4 py-3 border-b break-all"
               >
                 <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{item.url}</span>
               </a>
             )}
+
+            {/* Info + Actions */}
+            <div className="p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold font-display line-clamp-2 leading-snug">
+                    {item.reportTitle}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1">
+                    <Clock className="w-3 h-3" />
+                    {formatDate(item.createdAt)}
+                  </p>
+                </div>
+                <div className="flex gap-1.5 shrink-0">
+                  <button
+                    onClick={() => handleApprove(item)}
+                    disabled={isBusy}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-vote-truth/10 text-vote-truth hover:bg-vote-truth/20 text-xs font-medium transition-colors disabled:opacity-50"
+                  >
+                    {isBusy ? (
+                      <div className="w-3.5 h-3.5 border-2 border-vote-truth/40 border-t-vote-truth rounded-full animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-3.5 h-3.5" />
+                    )}
+                    অনুমোদন
+                  </button>
+                  <button
+                    onClick={() => handleReject(item)}
+                    disabled={isBusy}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-vote-fake/10 text-vote-fake hover:bg-vote-fake/20 text-xs font-medium transition-colors disabled:opacity-50"
+                  >
+                    {isBusy ? (
+                      <div className="w-3.5 h-3.5 border-2 border-vote-fake/40 border-t-vote-fake rounded-full animate-spin" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5" />
+                    )}
+                    বাতিল
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         );
       })}
@@ -493,6 +560,8 @@ export default function AdminPage() {
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"reports" | "evidence">("reports");
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  // Increment this to force PendingEvidenceSection to reload when switching to the tab
+  const [evidenceRefreshKey, setEvidenceRefreshKey] = useState(0);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
@@ -546,54 +615,62 @@ export default function AdminPage() {
     }
   };
 
+  const switchToEvidence = () => {
+    setActiveTab("evidence");
+    // Always trigger a fresh load when switching to evidence tab
+    setEvidenceRefreshKey((k) => k + 1);
+    loadPendingCount();
+  };
+
   if (!user) return <AdminLogin onLogin={() => {}} />;
 
   const totalPages = Math.ceil(reports.length / ADMIN_PAGE_SIZE);
   const paginated = reports.slice((page - 1) * ADMIN_PAGE_SIZE, page * ADMIN_PAGE_SIZE);
 
   return (
-    <div className="max-w-2xl mx-auto px-3 py-4">
+    <div className="max-w-2xl mx-auto px-4 py-4 pb-10">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="font-display font-bold text-lg">এডমিন প্যানেল</h2>
-          <p className="text-xs text-muted-foreground">{user.email}</p>
+          <h2 className="font-display font-bold text-xl">এডমিন প্যানেল</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-destructive transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-destructive transition-colors px-3 py-2 rounded-lg hover:bg-destructive/5"
         >
           <LogOut className="w-4 h-4" /> লগআউট
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 bg-muted rounded-xl p-1">
+      <div className="flex gap-1 mb-5 bg-muted rounded-xl p-1">
         <button
           onClick={() => setActiveTab("reports")}
-          className={`flex-1 flex items-center justify-center gap-1.5 text-xs py-2 rounded-lg font-medium transition-colors ${
-            activeTab === "reports" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
+          className={`flex-1 flex items-center justify-center gap-1.5 text-sm py-2.5 rounded-lg font-medium transition-all ${
+            activeTab === "reports"
+              ? "bg-card shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <FileText className="w-3.5 h-3.5" />
+          <FileText className="w-4 h-4" />
           রিপোর্ট
-          <span className="bg-primary/10 text-primary rounded-full px-1.5 py-0.5 text-[10px] leading-none">
+          <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-[11px] leading-none font-semibold">
             {reports.length}
           </span>
         </button>
         <button
-          onClick={() => {
-            setActiveTab("evidence");
-            loadPendingCount();
-          }}
-          className={`flex-1 flex items-center justify-center gap-1.5 text-xs py-2 rounded-lg font-medium transition-colors ${
-            activeTab === "evidence" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
+          onClick={switchToEvidence}
+          className={`flex-1 flex items-center justify-center gap-1.5 text-sm py-2.5 rounded-lg font-medium transition-all ${
+            activeTab === "evidence"
+              ? "bg-card shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Upload className="w-3.5 h-3.5" />
+          <Upload className="w-4 h-4" />
           পেন্ডিং প্রমাণ
           {pendingCount !== null && pendingCount > 0 && (
-            <span className="bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 text-[10px] leading-none animate-pulse">
+            <span className="bg-destructive text-destructive-foreground rounded-full px-2 py-0.5 text-[11px] leading-none font-semibold animate-pulse">
               {pendingCount}
             </span>
           )}
@@ -602,19 +679,23 @@ export default function AdminPage() {
 
       {/* Tab Content */}
       {activeTab === "evidence" ? (
-        <PendingEvidenceSection />
+        <PendingEvidenceSection refreshKey={evidenceRefreshKey} />
       ) : (
         <>
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-2">
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
-              <p className="text-xs text-muted-foreground">লোড হচ্ছে...</p>
+              <p className="text-xs text-muted-foreground">রিপোর্ট লোড হচ্ছে...</p>
+            </div>
+          ) : reports.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-sm font-display text-muted-foreground">কোনো রিপোর্ট নেই</p>
             </div>
           ) : (
             <>
               <div className="space-y-2">
                 {paginated.map((r) => (
-                  <div key={r.id} className="bg-card rounded-xl border p-3 shadow-sm">
+                  <div key={r.id} className="bg-card rounded-xl border shadow-sm p-3">
                     {editingId === r.id ? (
                       <EditReportForm
                         report={r}
@@ -625,8 +706,10 @@ export default function AdminPage() {
                       <div>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-display font-semibold text-sm truncate">{r.title}</h3>
-                            <p className="text-[11px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <h3 className="font-display font-semibold text-sm line-clamp-2 leading-snug">
+                              {r.title}
+                            </h3>
+                            <p className="text-[11px] text-muted-foreground mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                               <span>{r.area}</span>
                               <span>·</span>
                               <span>{r.corruptionType}</span>
@@ -654,7 +737,7 @@ export default function AdminPage() {
                             </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 text-xs mt-2">
+                        <div className="flex items-center gap-3 text-xs mt-2 pt-2 border-t border-border/50">
                           <span className="text-vote-truth">✅ {r.votes.truth}</span>
                           <span className="text-vote-proof">❓ {r.votes.needProve}</span>
                           <span className="text-vote-fake">❌ {r.votes.fake}</span>
@@ -670,21 +753,21 @@ export default function AdminPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-4 pb-4">
+                <div className="flex items-center justify-center gap-3 mt-6">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="px-3 py-1.5 text-xs rounded-lg border bg-card disabled:opacity-40"
+                    className="px-4 py-2 text-xs rounded-xl border bg-card disabled:opacity-40 hover:bg-muted transition-colors"
                   >
                     পূর্ববর্তী
                   </button>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground font-medium">
                     {page} / {totalPages}
                   </span>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="px-3 py-1.5 text-xs rounded-lg border bg-card disabled:opacity-40"
+                    className="px-4 py-2 text-xs rounded-xl border bg-card disabled:opacity-40 hover:bg-muted transition-colors"
                   >
                     পরবর্তী
                   </button>
