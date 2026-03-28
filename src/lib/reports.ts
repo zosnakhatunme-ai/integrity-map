@@ -10,7 +10,6 @@ import {
   increment,
   Timestamp,
   getDoc,
-  where,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { Report, VoteType, PendingEvidence } from "./types";
@@ -135,23 +134,22 @@ export async function submitPendingEvidence(
 }
 
 export async function fetchPendingEvidence(): Promise<PendingEvidence[]> {
-  const q = query(
-    collection(db, PENDING_EVIDENCE_COL),
-    where("status", "==", "pending"),
-    orderBy("createdAt", "desc")
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => {
-    const data = d.data();
-    return {
-      id: d.id,
-      reportId: data.reportId || "",
-      reportTitle: data.reportTitle || "",
-      url: data.url || "",
-      status: data.status || "pending",
-      createdAt: data.createdAt?.toDate?.() || new Date(),
-    } as PendingEvidence;
-  });
+  // No composite index needed — fetch all docs, filter & sort client-side
+  const snap = await getDocs(collection(db, PENDING_EVIDENCE_COL));
+  return snap.docs
+    .map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        reportId: data.reportId || "",
+        reportTitle: data.reportTitle || "",
+        url: data.url || "",
+        status: data.status || "pending",
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+      } as PendingEvidence;
+    })
+    .filter((e) => e.status === "pending")
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 export async function approvePendingEvidence(
