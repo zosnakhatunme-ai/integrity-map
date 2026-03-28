@@ -65,25 +65,16 @@ export async function voteReport(reportId: string, voteType: VoteType) {
   });
 }
 
-/**
- * Update any fields of a report including createdAt.
- * If createdAt is a plain JS Date, it is converted to a Firestore Timestamp
- * so it saves and sorts correctly in Firestore.
- */
 export async function updateReport(
   reportId: string,
   data: Partial<Report>
 ) {
   const ref = doc(db, REPORTS_COL, reportId);
-
-  // Build the payload — convert Date → Timestamp so Firestore stores it correctly
   const payload: Record<string, unknown> = { ...data };
   if (payload.createdAt instanceof Date) {
     payload.createdAt = Timestamp.fromDate(payload.createdAt);
   }
-  // Remove the id field if accidentally included
   delete payload.id;
-
   await updateDoc(ref, payload);
 }
 
@@ -128,13 +119,12 @@ export async function submitPendingEvidence(
     reportId,
     reportTitle,
     url,
-    status: "pending",
     createdAt: Timestamp.now(),
   });
 }
 
 export async function fetchPendingEvidence(): Promise<PendingEvidence[]> {
-  // No composite index needed — fetch all docs, filter & sort client-side
+  // No composite index needed — fetch all and sort client-side
   const snap = await getDocs(collection(db, PENDING_EVIDENCE_COL));
   return snap.docs
     .map((d) => {
@@ -144,11 +134,10 @@ export async function fetchPendingEvidence(): Promise<PendingEvidence[]> {
         reportId: data.reportId || "",
         reportTitle: data.reportTitle || "",
         url: data.url || "",
-        status: data.status || "pending",
+        status: "pending",
         createdAt: data.createdAt?.toDate?.() || new Date(),
       } as PendingEvidence;
     })
-    .filter((e) => e.status === "pending")
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
@@ -157,14 +146,17 @@ export async function approvePendingEvidence(
   reportId: string,
   evidenceUrl: string
 ) {
-  await updateDoc(doc(db, PENDING_EVIDENCE_COL, evidenceId), { status: "approved" });
+  // Add the evidence URL to the report
   const report = await fetchReport(reportId);
   if (report) {
     const updated = [...report.evidenceLinks, evidenceUrl];
     await updateDoc(doc(db, REPORTS_COL, reportId), { evidenceLinks: updated });
   }
+  // Delete from pending_evidence collection
+  await deleteDoc(doc(db, PENDING_EVIDENCE_COL, evidenceId));
 }
 
 export async function rejectPendingEvidence(evidenceId: string) {
-  await updateDoc(doc(db, PENDING_EVIDENCE_COL, evidenceId), { status: "rejected" });
+  // Delete from pending_evidence collection
+  await deleteDoc(doc(db, PENDING_EVIDENCE_COL, evidenceId));
 }
