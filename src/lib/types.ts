@@ -16,3 +16,12 @@ export interface Report {
 }
 
 export type VoteType = "truth" | "needProve" | "fake";
+
+export interface PendingEvidence {
+  id: string;
+  reportId: string;
+  reportTitle: string;
+  url: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: Date;
+}
