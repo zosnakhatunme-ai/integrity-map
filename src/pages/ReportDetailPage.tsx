@@ -3,13 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { ArrowLeft, MapPin, Share2 } from "lucide-react";
+import { ArrowLeft, MapPin, Share2, CheckCircle, AlertTriangle, XCircle, HelpCircle } from "lucide-react";
 import { fetchReport } from "@/lib/reports";
 import { VoteButtons } from "@/components/VoteButtons";
 import { EvidenceGrid } from "@/components/MediaPreview";
 import { SkeletonDetailPage } from "@/components/SkeletonCard";
 import { AnonAvatar } from "@/components/AnonAvatar";
-import { getAnonymousName, formatDate, getShareText } from "@/lib/helpers";
+import { getAnonymousName, formatDate, getShareText, getDominantVote } from "@/lib/helpers";
 import type { Report } from "@/lib/types";
 
 const defaultIcon = L.icon({
@@ -21,6 +21,70 @@ const defaultIcon = L.icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
+
+function VoteVerdict({ votes }: { votes: Report["votes"] }) {
+  const total = votes.truth + votes.needProve + votes.fake;
+  const dominant = getDominantVote(votes);
+
+  if (total === 0) {
+    return (
+      <div className="mt-4 flex items-center gap-3 p-4 rounded-xl bg-muted/50 border border-border">
+        <HelpCircle className="w-8 h-8 text-muted-foreground shrink-0" />
+        <div>
+          <p className="font-display font-bold text-sm text-foreground">যাচাই হয়নি</p>
+          <p className="text-xs text-muted-foreground mt-0.5">এখনো কোনো ভোট পড়েনি। ভোট দিয়ে রিপোর্ট যাচাই করুন।</p>
+        </div>
+      </div>
+    );
+  }
+
+  const truthPct = Math.round((votes.truth / total) * 100);
+  const fakePct = Math.round((votes.fake / total) * 100);
+  const proofPct = Math.round((votes.needProve / total) * 100);
+
+  const verdictConfig = {
+    truth: {
+      icon: <CheckCircle className="w-8 h-8 text-vote-truth shrink-0" />,
+      title: "সম্ভবত সত্য",
+      desc: `${truthPct}% ভোটদাতা মনে করেন এই রিপোর্টটি সত্য (মোট ${total}টি ভোট)`,
+      bg: "bg-green-50 dark:bg-green-950/30",
+      border: "border-green-200 dark:border-green-800",
+    },
+    fake: {
+      icon: <XCircle className="w-8 h-8 text-vote-fake shrink-0" />,
+      title: "সম্ভবত মিথ্যা",
+      desc: `${fakePct}% ভোটদাতা মনে করেন এই রিপোর্টটি মিথ্যা (মোট ${total}টি ভোট)`,
+      bg: "bg-red-50 dark:bg-red-950/30",
+      border: "border-red-200 dark:border-red-800",
+    },
+    needProve: {
+      icon: <AlertTriangle className="w-8 h-8 text-vote-proof shrink-0" />,
+      title: "প্রমাণ প্রয়োজন",
+      desc: `${proofPct}% ভোটদাতা মনে করেন এই রিপোর্টের প্রমাণ দরকার (মোট ${total}টি ভোট)`,
+      bg: "bg-blue-50 dark:bg-blue-950/30",
+      border: "border-blue-200 dark:border-blue-800",
+    },
+    neutral: {
+      icon: <HelpCircle className="w-8 h-8 text-muted-foreground shrink-0" />,
+      title: "মতামত বিভক্ত",
+      desc: `ভোটদাতাদের মতামত সমানভাবে বিভক্ত (মোট ${total}টি ভোট)`,
+      bg: "bg-muted/50",
+      border: "border-border",
+    },
+  };
+
+  const v = verdictConfig[dominant];
+
+  return (
+    <div className={`mt-4 flex items-center gap-3 p-4 rounded-xl ${v.bg} border ${v.border}`}>
+      {v.icon}
+      <div>
+        <p className="font-display font-bold text-sm text-foreground">{v.title}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{v.desc}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function ReportDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -104,6 +168,8 @@ export default function ReportDetailPage() {
           )}
 
           <VoteButtons reportId={report.id} votes={report.votes} />
+
+          <VoteVerdict votes={report.votes} />
 
           {totalVotes > 0 && (
             <div className="mt-4 space-y-2">
