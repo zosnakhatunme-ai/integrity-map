@@ -302,6 +302,7 @@ export default function MapPage() {
         {targetReportId && <AutoOpenPopup reportId={targetReportId} markerRefs={markerRefs} />}
 
         <HeatmapLayer points={heatmapPoints} enabled={showHeatmap} />
+        <DistrictLayer reports={filtered} enabled={showDistricts} />
 
         {recentReports.map((r) => (
           <PulseMarker
