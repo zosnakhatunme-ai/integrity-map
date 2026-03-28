@@ -190,6 +190,8 @@ export default function MapPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [filterType, setFilterType] = useState("");
   const [showFilter, setShowFilter] = useState(false);
+  const [showDistricts, setShowDistricts] = useState(false);
+  const [timeFilter, setTimeFilter] = useState("all");
   const [showInstructions, setShowInstructions] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [flyTo, setFlyTo] = useState<{ lat: number; lng: number; zoom: number } | null>(null);
