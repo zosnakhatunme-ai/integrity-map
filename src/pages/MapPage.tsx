@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, CircleMarker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Plus, Navigation, Filter, X, FileText, CheckCircle, AlertTriangle, Info, MapPin, TrendingUp, Flame, Globe } from "lucide-react";
+import { Plus, Navigation, Filter, X, FileText, CheckCircle, AlertTriangle, Info, MapPin, TrendingUp, Flame } from "lucide-react";
 import { fetchReports } from "@/lib/reports";
 import { BD_CENTER, BD_ZOOM, CORRUPTION_TYPES } from "@/lib/constants";
 import { getDominantVote, formatDate, getCorruptionIcon, getAnonymousName } from "@/lib/helpers";
@@ -12,8 +12,6 @@ import type { Report } from "@/lib/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import HeatmapLayer from "@/components/map/HeatmapLayer";
 import PulseMarker from "@/components/map/PulseMarker";
-import DistrictLayer from "@/components/map/DistrictLayer";
-import TimeSlider, { getTimeDays } from "@/components/map/TimeSlider";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -190,8 +188,6 @@ export default function MapPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [filterType, setFilterType] = useState("");
   const [showFilter, setShowFilter] = useState(false);
-  const [showDistricts, setShowDistricts] = useState(false);
-  const [timeFilter, setTimeFilter] = useState("all");
   const [showInstructions, setShowInstructions] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [flyTo, setFlyTo] = useState<{ lat: number; lng: number; zoom: number } | null>(null);
@@ -255,17 +251,7 @@ export default function MapPage() {
     }
   }, [searchParams]);
 
-  const timeFiltered = useMemo(() => {
-    const days = getTimeDays(timeFilter);
-    if (days === 0) return reports;
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-    return reports.filter((r) => {
-      const created = r.createdAt instanceof Date ? r.createdAt.getTime() : new Date(r.createdAt).getTime();
-      return created >= cutoff;
-    });
-  }, [reports, timeFilter]);
-
-  const filtered = filterType ? timeFiltered.filter((r) => r.corruptionType === filterType) : timeFiltered;
+  const filtered = filterType ? reports.filter((r) => r.corruptionType === filterType) : reports;
 
   const totalVotes = reports.reduce((sum, r) => sum + r.votes.truth + r.votes.needProve + r.votes.fake, 0);
   const verifiedCount = reports.filter((r) => getDominantVote(r.votes) === "truth").length;
@@ -302,7 +288,6 @@ export default function MapPage() {
         {targetReportId && <AutoOpenPopup reportId={targetReportId} markerRefs={markerRefs} />}
 
         <HeatmapLayer points={heatmapPoints} enabled={showHeatmap} />
-        <DistrictLayer reports={filtered} enabled={showDistricts} />
 
         {recentReports.map((r) => (
           <PulseMarker
@@ -326,30 +311,27 @@ export default function MapPage() {
         ))}
       </MapContainer>
 
-      <div className="absolute top-2 left-2 right-14 z-[1000] flex flex-col gap-2">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
-            <FileText className="w-4 h-4 text-primary" />
-            <div>
-              <p className="text-xs font-bold font-display leading-none">{filtered.length}</p>
-              <p className="text-[10px] text-muted-foreground">রিপোর্ট</p>
-            </div>
+      <div className="absolute top-2 left-2 right-14 z-[1000] flex gap-2 overflow-x-auto no-scrollbar">
+        <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
+          <FileText className="w-4 h-4 text-primary" />
+          <div>
+            <p className="text-xs font-bold font-display leading-none">{reports.length}</p>
+            <p className="text-[10px] text-muted-foreground">রিপোর্ট</p>
           </div>
-          <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
-            <CheckCircle className="w-4 h-4 text-vote-truth" />
-            <div>
-              <p className="text-xs font-bold font-display leading-none">{verifiedCount}</p>
-              <p className="text-[10px] text-muted-foreground">যাচাইকৃত</p>
-            </div>
+        </div>
+        <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
+          <CheckCircle className="w-4 h-4 text-vote-truth" />
+          <div>
+            <p className="text-xs font-bold font-display leading-none">{verifiedCount}</p>
+            <p className="text-[10px] text-muted-foreground">যাচাইকৃত</p>
           </div>
-          <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
-            <AlertTriangle className="w-4 h-4 text-vote-fake" />
-            <div>
-              <p className="text-xs font-bold font-display leading-none">{totalVotes}</p>
-              <p className="text-[10px] text-muted-foreground">মোট ভোট</p>
-            </div>
+        </div>
+        <div className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-2 flex items-center gap-2 shrink-0">
+          <AlertTriangle className="w-4 h-4 text-vote-fake" />
+          <div>
+            <p className="text-xs font-bold font-display leading-none">{totalVotes}</p>
+            <p className="text-[10px] text-muted-foreground">মোট ভোট</p>
           </div>
-          <TimeSlider value={timeFilter} onChange={setTimeFilter} />
         </div>
       </div>
 
@@ -408,12 +390,6 @@ export default function MapPage() {
             <Flame className="w-5 h-5" />
           </button>
           <button
-            onClick={() => setShowDistricts(!showDistricts)}
-            className={`shadow-lg rounded-full w-10 h-10 flex items-center justify-center border ${showDistricts ? "bg-primary text-primary-foreground" : "bg-card"}`}
-          >
-            <Globe className="w-5 h-5" />
-          </button>
-          <button
             onClick={handleNearby}
             className="bg-card shadow-lg rounded-full w-10 h-10 flex items-center justify-center border"
           >
@@ -443,12 +419,6 @@ export default function MapPage() {
             className={`backdrop-blur-sm shadow-md rounded-lg border px-3 py-1.5 flex items-center gap-1 text-xs transition-colors ${showHeatmap ? "bg-primary text-primary-foreground" : "bg-card/95 hover:bg-muted"}`}
           >
             <Flame className="w-3.5 h-3.5" /> হিটম্যাপ
-          </button>
-          <button
-            onClick={() => setShowDistricts(!showDistricts)}
-            className={`backdrop-blur-sm shadow-md rounded-lg border px-3 py-1.5 flex items-center gap-1 text-xs transition-colors ${showDistricts ? "bg-primary text-primary-foreground" : "bg-card/95 hover:bg-muted"}`}
-          >
-            <Globe className="w-3.5 h-3.5" /> জেলা
           </button>
           <button
             onClick={handleNearby}
