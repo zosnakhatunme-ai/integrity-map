@@ -445,6 +445,12 @@ export default function MapPage() {
             <Flame className="w-3.5 h-3.5" /> হিটম্যাপ
           </button>
           <button
+            onClick={() => setShowDistricts(!showDistricts)}
+            className={`backdrop-blur-sm shadow-md rounded-lg border px-3 py-1.5 flex items-center gap-1 text-xs transition-colors ${showDistricts ? "bg-primary text-primary-foreground" : "bg-card/95 hover:bg-muted"}`}
+          >
+            <Globe className="w-3.5 h-3.5" /> জেলা
+          </button>
+          <button
             onClick={handleNearby}
             className="bg-card/95 backdrop-blur-sm shadow-md rounded-lg border px-3 py-1.5 flex items-center gap-1 text-xs hover:bg-muted transition-colors"
           >
