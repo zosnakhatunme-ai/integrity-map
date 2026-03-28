@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, CircleMarker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Plus, Navigation, Filter, X, FileText, CheckCircle, AlertTriangle, Info, MapPin, TrendingUp, Flame } from "lucide-react";
+import { Plus, Navigation, Filter, X, FileText, CheckCircle, AlertTriangle, Info, MapPin, TrendingUp, Flame, Globe } from "lucide-react";
 import { fetchReports } from "@/lib/reports";
 import { BD_CENTER, BD_ZOOM, CORRUPTION_TYPES } from "@/lib/constants";
 import { getDominantVote, formatDate, getCorruptionIcon, getAnonymousName } from "@/lib/helpers";
@@ -12,6 +12,8 @@ import type { Report } from "@/lib/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import HeatmapLayer from "@/components/map/HeatmapLayer";
 import PulseMarker from "@/components/map/PulseMarker";
+import DistrictLayer from "@/components/map/DistrictLayer";
+import TimeSlider, { getTimeDays } from "@/components/map/TimeSlider";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
