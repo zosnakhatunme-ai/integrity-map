@@ -66,12 +66,26 @@ export async function voteReport(reportId: string, voteType: VoteType) {
   });
 }
 
+/**
+ * Update any fields of a report including createdAt.
+ * If createdAt is a plain JS Date, it is converted to a Firestore Timestamp
+ * so it saves and sorts correctly in Firestore.
+ */
 export async function updateReport(
   reportId: string,
-  data: Partial<Omit<Report, "id" | "createdAt">>
+  data: Partial<Report>
 ) {
   const ref = doc(db, REPORTS_COL, reportId);
-  await updateDoc(ref, data);
+
+  // Build the payload — convert Date → Timestamp so Firestore stores it correctly
+  const payload: Record<string, unknown> = { ...data };
+  if (payload.createdAt instanceof Date) {
+    payload.createdAt = Timestamp.fromDate(payload.createdAt);
+  }
+  // Remove the id field if accidentally included
+  delete payload.id;
+
+  await updateDoc(ref, payload);
 }
 
 export async function deleteReport(reportId: string) {
@@ -140,10 +154,12 @@ export async function fetchPendingEvidence(): Promise<PendingEvidence[]> {
   });
 }
 
-export async function approvePendingEvidence(evidenceId: string, reportId: string, evidenceUrl: string) {
-  // Update evidence status
+export async function approvePendingEvidence(
+  evidenceId: string,
+  reportId: string,
+  evidenceUrl: string
+) {
   await updateDoc(doc(db, PENDING_EVIDENCE_COL, evidenceId), { status: "approved" });
-  // Fetch current report and append the evidence link
   const report = await fetchReport(reportId);
   if (report) {
     const updated = [...report.evidenceLinks, evidenceUrl];
