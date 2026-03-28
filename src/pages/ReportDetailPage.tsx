@@ -3,13 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { ArrowLeft, MapPin, Share2 } from "lucide-react";
-import { fetchReport } from "@/lib/reports";
+import { ArrowLeft, MapPin, Share2, Upload, Link2, Camera, X, ShieldCheck, ShieldAlert, HelpCircle, Shield } from "lucide-react";
+import { fetchReport, uploadToImgBB, submitPendingEvidence } from "@/lib/reports";
 import { VoteButtons } from "@/components/VoteButtons";
 import { EvidenceGrid } from "@/components/MediaPreview";
 import { SkeletonDetailPage } from "@/components/SkeletonCard";
 import { AnonAvatar } from "@/components/AnonAvatar";
-import { getAnonymousName, formatDate, getShareText } from "@/lib/helpers";
+import { getAnonymousName, formatDate, getShareText, getDominantVote } from "@/lib/helpers";
+import { toast } from "sonner";
 import type { Report } from "@/lib/types";
 
 const defaultIcon = L.icon({
@@ -21,6 +22,150 @@ const defaultIcon = L.icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
+
+function VoteVerdict({ votes }: { votes: Report["votes"] }) {
+  const total = votes.truth + votes.needProve + votes.fake;
+  if (total === 0) {
+    return (
+      <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted border border-border">
+        <Shield className="w-5 h-5 text-muted-foreground" />
+        <div>
+          <p className="text-sm font-semibold text-muted-foreground font-display">যাচাই হয়নি</p>
+          <p className="text-xs text-muted-foreground">এখনো কেউ ভোট দেয়নি</p>
+        </div>
+      </div>
+    );
+  }
+
+  const dominant = getDominantVote(votes);
+  const truthPct = Math.round((votes.truth / total) * 100);
+  const fakePct = Math.round((votes.fake / total) * 100);
+  const proofPct = Math.round((votes.needProve / total) * 100);
+
+  if (dominant === "truth") {
+    return (
+      <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-vote-truth/10 border border-vote-truth/30">
+        <ShieldCheck className="w-5 h-5 text-vote-truth" />
+        <div>
+          <p className="text-sm font-semibold text-vote-truth font-display">সত্য বলে যাচাইকৃত</p>
+          <p className="text-xs text-muted-foreground">{truthPct}% মানুষ সত্য বলেছেন · {total} ভোট</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dominant === "fake") {
+    return (
+      <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-vote-fake/10 border border-vote-fake/30">
+        <ShieldAlert className="w-5 h-5 text-vote-fake" />
+        <div>
+          <p className="text-sm font-semibold text-vote-fake font-display">মিথ্যা বলে চিহ্নিত</p>
+          <p className="text-xs text-muted-foreground">{fakePct}% মানুষ মিথ্যা বলেছেন · {total} ভোট</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-vote-proof/10 border border-vote-proof/30">
+      <HelpCircle className="w-5 h-5 text-vote-proof" />
+      <div>
+        <p className="text-sm font-semibold text-vote-proof font-display">আরো প্রমাণ প্রয়োজন</p>
+        <p className="text-xs text-muted-foreground">{proofPct}% মানুষ প্রমাণ চেয়েছেন · {total} ভোট</p>
+      </div>
+    </div>
+  );
+}
+
+function PublicEvidenceUpload({ reportId, reportTitle }: { reportId: string; reportTitle: string }) {
+  const [uploading, setUploading] = useState(false);
+  const [newLink, setNewLink] = useState("");
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const url = await uploadToImgBB(file);
+        await submitPendingEvidence(reportId, reportTitle, url);
+      }
+      toast.success("প্রমাণ সাবমিট হয়েছে! এডমিন অনুমোদনের পর এটি দেখা যাবে।");
+    } catch {
+      toast.error("আপলোড ব্যর্থ হয়েছে");
+    }
+    setUploading(false);
+  };
+
+  const handleLinkSubmit = async () => {
+    if (!newLink.trim()) return;
+    try {
+      await submitPendingEvidence(reportId, reportTitle, newLink.trim());
+      setNewLink("");
+      toast.success("লিংক সাবমিট হয়েছে! এডমিন অনুমোদনের পর এটি দেখা যাবে।");
+    } catch {
+      toast.error("সাবমিট ব্যর্থ হয়েছে");
+    }
+  };
+
+  return (
+    <div className="bg-card rounded-xl border shadow-sm p-4">
+      <h3 className="font-display font-semibold text-sm mb-3 flex items-center gap-2">
+        <Upload className="w-4 h-4 text-primary" />
+        প্রমাণ জমা দিন
+      </h3>
+      <p className="text-xs text-muted-foreground mb-3">
+        আপনার কাছে এই রিপোর্টের প্রমাণ থাকলে জমা দিন। এডমিন অনুমোদনের পর এটি সবাই দেখতে পাবে।
+      </p>
+
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <label className="flex flex-col items-center justify-center gap-1.5 px-3 py-4 border-2 border-dashed rounded-xl cursor-pointer hover:bg-muted hover:border-primary/30 transition-all">
+          <Camera className="w-5 h-5 text-primary" />
+          <span className="text-xs font-medium font-display">ছবি আপলোড</span>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+        </label>
+        <div
+          onClick={() => document.getElementById("public-evidence-link")?.focus()}
+          className="flex flex-col items-center justify-center gap-1.5 px-3 py-4 border-2 border-dashed rounded-xl cursor-pointer hover:bg-muted hover:border-primary/30 transition-all"
+        >
+          <Link2 className="w-5 h-5 text-primary" />
+          <span className="text-xs font-medium font-display">লিংক যুক্ত</span>
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          id="public-evidence-link"
+          type="text"
+          value={newLink}
+          onChange={(e) => setNewLink(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleLinkSubmit()}
+          placeholder="প্রমাণের লিংক পেস্ট করুন"
+          className="flex-1 border-2 rounded-xl px-3 py-2.5 bg-card text-sm focus:border-primary outline-none transition-all"
+        />
+        <button
+          onClick={handleLinkSubmit}
+          className="px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+        >
+          জমা দিন
+        </button>
+      </div>
+
+      {uploading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+          আপলোড হচ্ছে...
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ReportDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -68,15 +213,18 @@ export default function ReportDetailPage() {
   const fakePct = totalVotes ? Math.round((report.votes.fake / totalVotes) * 100) : 0;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-4">
+    <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-1 text-sm text-muted-foreground mb-4 hover:text-foreground transition-colors"
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> ফিরে যান
       </button>
 
-      <div className="bg-card rounded-xl border shadow-sm overflow-hidden mb-4">
+      {/* Vote Verdict */}
+      <VoteVerdict votes={report.votes} />
+
+      <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
         <div className="p-4">
           <div className="flex items-center gap-2.5 mb-3">
             <AnonAvatar id={report.id} size={40} />
@@ -138,6 +286,7 @@ export default function ReportDetailPage() {
         </div>
       </div>
 
+      {/* Map Preview */}
       <div className="bg-card rounded-xl border shadow-sm overflow-hidden h-48">
         <MapContainer
           center={[report.latitude, report.longitude]}
@@ -151,6 +300,9 @@ export default function ReportDetailPage() {
           <Marker position={[report.latitude, report.longitude]} icon={defaultIcon} />
         </MapContainer>
       </div>
+
+      {/* Public Evidence Upload */}
+      <PublicEvidenceUpload reportId={report.id} reportTitle={report.title} />
     </div>
   );
 }

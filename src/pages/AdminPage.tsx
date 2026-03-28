@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { fetchReports, updateReport, deleteReport } from "@/lib/reports";
+import { fetchReports, updateReport, deleteReport, fetchPendingEvidence, approvePendingEvidence, rejectPendingEvidence } from "@/lib/reports";
 import { CORRUPTION_TYPES } from "@/lib/constants";
 import { formatDate } from "@/lib/helpers";
-import { Trash2, Edit, Save, X, LogOut, Plus, Minus } from "lucide-react";
+import { Trash2, Edit, Save, X, LogOut, Plus, Minus, CheckCircle, XCircle, Upload, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import type { Report } from "@/lib/types";
+import type { Report, PendingEvidence } from "@/lib/types";
 
 const ADMIN_PAGE_SIZE = 15;
 
@@ -135,7 +135,7 @@ function EditReportForm({ report, onSave, onCancel }: { report: Report; onSave: 
         </div>
       </div>
       <div className="flex gap-2 pt-2">
-        <button onClick={() => onSave(data)} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-vote-truth text-vote-truth-foreground rounded-lg text-sm font-medium">
+        <button onClick={() => onSave(data)} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-vote-truth text-white rounded-lg text-sm font-medium">
           <Save className="w-4 h-4" /> সেভ করুন
         </button>
         <button onClick={onCancel} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border rounded-lg text-sm font-medium">
@@ -146,12 +146,101 @@ function EditReportForm({ report, onSave, onCancel }: { report: Report; onSave: 
   );
 }
 
+function PendingEvidenceSection() {
+  const [evidence, setEvidence] = useState<PendingEvidence[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const data = await fetchPendingEvidence();
+    setEvidence(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleApprove = async (item: PendingEvidence) => {
+    try {
+      await approvePendingEvidence(item.id, item.reportId, item.url);
+      toast.success("প্রমাণ অনুমোদিত হয়েছে");
+      load();
+    } catch {
+      toast.error("অনুমোদন ব্যর্থ");
+    }
+  };
+
+  const handleReject = async (item: PendingEvidence) => {
+    try {
+      await rejectPendingEvidence(item.id);
+      toast.success("প্রমাণ প্রত্যাখ্যান হয়েছে");
+      load();
+    } catch {
+      toast.error("প্রত্যাখ্যান ব্যর্থ");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-6">
+        <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (evidence.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground text-center py-4">কোনো পেন্ডিং প্রমাণ নেই</p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {evidence.map((item) => (
+        <div key={item.id} className="bg-card rounded-lg border p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold truncate">{item.reportTitle}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(item.createdAt)}</p>
+              <div className="mt-2">
+                {item.url.match(/\.(jpg|jpeg|png|gif|webp)/i) ? (
+                  <img src={item.url} alt="" className="w-24 h-24 object-cover rounded-lg border" />
+                ) : (
+                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                    <ExternalLink className="w-3 h-3" /> লিংক দেখুন
+                  </a>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-1.5 shrink-0">
+              <button
+                onClick={() => handleApprove(item)}
+                className="p-2 rounded-lg bg-vote-truth/10 text-vote-truth hover:bg-vote-truth/20 transition-colors"
+                title="অনুমোদন"
+              >
+                <CheckCircle className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleReject(item)}
+                className="p-2 rounded-lg bg-vote-fake/10 text-vote-fake hover:bg-vote-fake/20 transition-colors"
+                title="প্রত্যাখ্যান"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<"reports" | "evidence">("reports");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
@@ -209,69 +298,89 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <p className="text-xs text-muted-foreground mb-3">মোট রিপোর্ট: {reports.length}</p>
+      {/* Tabs */}
+      <div className="flex gap-1 mb-4 bg-muted rounded-lg p-1">
+        <button
+          onClick={() => setActiveTab("reports")}
+          className={`flex-1 text-xs py-2 rounded-md font-medium transition-colors ${activeTab === "reports" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
+        >
+          📋 রিপোর্ট ({reports.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("evidence")}
+          className={`flex-1 text-xs py-2 rounded-md font-medium transition-colors flex items-center justify-center gap-1 ${activeTab === "evidence" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
+        >
+          <Upload className="w-3 h-3" /> পেন্ডিং প্রমাণ
+        </button>
+      </div>
 
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
-        </div>
+      {activeTab === "evidence" ? (
+        <PendingEvidenceSection />
       ) : (
         <>
-          <div className="space-y-3">
-            {paginated.map((r) => (
-              <div key={r.id} className="bg-card rounded-lg border p-3">
-                {editingId === r.id ? (
-                  <EditReportForm report={r} onSave={(data) => saveEdit(r.id, data)} onCancel={() => setEditingId(null)} />
-                ) : (
-                  <div>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-display font-semibold text-sm truncate">{r.title}</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">{r.area} · {r.corruptionType} · {formatDate(r.createdAt)}</p>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {paginated.map((r) => (
+                  <div key={r.id} className="bg-card rounded-lg border p-3">
+                    {editingId === r.id ? (
+                      <EditReportForm report={r} onSave={(data) => saveEdit(r.id, data)} onCancel={() => setEditingId(null)} />
+                    ) : (
+                      <div>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-display font-semibold text-sm truncate">{r.title}</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">{r.area} · {r.corruptionType} · {formatDate(r.createdAt)}</p>
+                          </div>
+                          <div className="flex gap-1 shrink-0 ml-2">
+                            <button onClick={() => setEditingId(r.id)} className="p-1.5 hover:bg-muted rounded transition-colors">
+                              <Edit className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                            <button onClick={() => handleDelete(r.id)} className="p-1.5 hover:bg-destructive/10 rounded transition-colors">
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex gap-3 text-xs mt-1.5">
+                          <span className="text-vote-truth">✅ {r.votes.truth}</span>
+                          <span className="text-vote-proof">❓ {r.votes.needProve}</span>
+                          <span className="text-vote-fake">❌ {r.votes.fake}</span>
+                        </div>
+                        {r.evidenceLinks.length > 0 && (
+                          <p className="text-[10px] text-muted-foreground mt-1">📎 {r.evidenceLinks.length}টি প্রমাণ</p>
+                        )}
                       </div>
-                      <div className="flex gap-1 shrink-0 ml-2">
-                        <button onClick={() => setEditingId(r.id)} className="p-1.5 hover:bg-muted rounded transition-colors">
-                          <Edit className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                        <button onClick={() => handleDelete(r.id)} className="p-1.5 hover:bg-destructive/10 rounded transition-colors">
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 text-xs mt-1.5">
-                      <span className="text-vote-truth">✅ {r.votes.truth}</span>
-                      <span className="text-vote-proof">❓ {r.votes.needProve}</span>
-                      <span className="text-vote-fake">❌ {r.votes.fake}</span>
-                    </div>
-                    {r.evidenceLinks.length > 0 && (
-                      <p className="text-[10px] text-muted-foreground mt-1">📎 {r.evidenceLinks.length}টি প্রমাণ</p>
                     )}
                   </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-4 pb-4">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1.5 text-xs rounded-lg border bg-card disabled:opacity-40"
-              >
-                পূর্ববর্তী
-              </button>
-              <span className="text-xs text-muted-foreground">
-                {page} / {totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1.5 text-xs rounded-lg border bg-card disabled:opacity-40"
-              >
-                পরবর্তী
-              </button>
-            </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-4 pb-4">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-3 py-1.5 text-xs rounded-lg border bg-card disabled:opacity-40"
+                  >
+                    পূর্ববর্তী
+                  </button>
+                  <span className="text-xs text-muted-foreground">
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="px-3 py-1.5 text-xs rounded-lg border bg-card disabled:opacity-40"
+                  >
+                    পরবর্তী
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </>
       )}
